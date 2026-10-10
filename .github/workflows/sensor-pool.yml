@@ -1,0 +1,69 @@
+name: Sensor pool capture
+
+# Ages the shelf-life experiment's specimens for free: each day this appends
+# a few fresh payloads (with capture timestamps) to sensor-pool/pool.jsonl on
+# the `sensor-pool` branch. No Disney credentials are involved -- the only
+# network call is to the payload service itself. Every day the pool grows is
+# a day the 24h/48h/7d ladder cells have specimens waiting when the probe
+# next runs.
+#
+# Commits here are made with GITHUB_TOKEN, which by design does not trigger
+# other workflows, so this cannot loop.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Payloads to capture'
+        required: false
+        default: '5'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sensor-pool
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The pool lives on its own branch so the published site and the main
+      # history never see payloads as churn.
+      - name: Check out the pool branch
+        run: |
+          git fetch origin sensor-pool || echo "no pool branch yet"
+          if git show-ref --verify --quiet refs/remotes/origin/sensor-pool; then
+            git checkout -b sensor-pool origin/sensor-pool
+          else
+            git checkout -b sensor-pool
+          fi
+
+      - name: Capture payloads
+        run: |
+          mkdir -p sensor-pool
+          node tools/sensor-pool/fetch.mjs \
+            --out sensor-pool/pool.jsonl \
+            --count "${{ github.event.inputs.count || 5 }}"
+
+      - name: Commit the pool
+        run: |
+          git config user.name "sensor-pool bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add sensor-pool/pool.jsonl
+          if git diff --cached --quiet; then
+            echo "nothing new to capture"
+            exit 0
+          fi
+          git commit -m "Capture $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push origin sensor-pool

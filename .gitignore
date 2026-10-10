@@ -7,3 +7,4 @@ tsconfig.tsbuildinfo
 .DS_Store
 .vite
 .idea/workspace.xml
+sensor-pool-results.json
