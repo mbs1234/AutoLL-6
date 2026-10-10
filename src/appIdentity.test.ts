@@ -56,7 +56,7 @@ describe('applyAppIdentity()', () => {
 /**
  * These four values are the whole difference between this build and its sibling.
  *
- * AutoLL-3 and AutoLL-4 are kept as mutual fallbacks and are synced by merging
+ * AutoLL-3 and AutoLL-6 are kept as mutual fallbacks and are synced by merging
  * one into the other, so the identity file is the one place a merge is supposed
  * to stop. Nothing in git makes it stop there -- a merge that silently takes the
  * wrong side of this file produces a build that calls itself by the other's

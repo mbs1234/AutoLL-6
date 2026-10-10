@@ -1,5 +1,11 @@
 # Keeping AutoLL-3 and AutoLL-4 in step
 
+> **2026-10-10, AutoLL-6.** AutoLL-6 was forked from AutoLL-4 at commit
+> `e61ba185c485fa4ba19fc0459465c4293547a57c` (rename sweep only, no code
+> change). The port rule now flows **AutoLL-3 → AutoLL-4 → AutoLL-6**, and
+> AutoLL-6's `upstream-drift.yml` watches AutoLL-4. This document is retained
+> as the AutoLL-3 ↔ AutoLL-4 record, unrevised.
+
 Written 2026-09-17. Rewritten 2026-09-18, when the repositories turned out to
 be more closely related than this document first assumed.
 

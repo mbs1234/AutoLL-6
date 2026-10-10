@@ -1,11 +1,15 @@
 # Fork notes
 
-Forked from [AutoLL-3](https://github.com/mbs1234/AutoLL-3) at commit
-`f889fbf8719f79ceea66e6dbc6c196f5a7bef758` as an isolated test bed for the
-new joelface sensor-data mechanism. AutoLL-3 in turn is built on
+Forked from [AutoLL-4](https://github.com/mbs1234/AutoLL-4) at commit
+`e61ba185c485fa4ba19fc0459465c4293547a57c` (2026-10-10) — a rename sweep
+(storage namespace `autoll6.*`, tags `autoll6-`, origins, branding) and no
+code change. Per `docs/SYNC.md`'s port rule, fixes now flow
+AutoLL-3 → AutoLL-4 → AutoLL-6, and `upstream-drift.yml` watches AutoLL-4.
+This build exists to investigate owning the `5,i` sensor format; see
+`docs/SENSOR-FORMAT.md`. AutoLL-3 in turn is built on
 [joelface/bg1](https://github.com/joelface/bg1) and
 [jgeurts/bg1](https://github.com/jgeurts/bg1), both GPL-3.0-only.
-Deployed to <https://mbs1234.github.io/AutoLL-4/>.
+Deployed to <https://mbs1234.github.io/AutoLL-6/>.
 
 ## Why a plain `mickey` build does not work
 
@@ -42,7 +46,7 @@ main (source) ────────────► npm run build ──► di
 installer commit (static) ─► overlay index/start/news/contact/autoloader/icon/css
                               (never overwriting freshly built bg1.js, bg1.css,
                                responder.html or their chunks)
-                            ─► brand URLs and labels for mbs1234.github.io/AutoLL-4
+                            ─► brand URLs and labels for mbs1234.github.io/AutoLL-6
                             ─► GitHub Pages
 ```
 
@@ -64,9 +68,9 @@ sending an `x-acf-sensor-data` header alongside an `x-app-id`. Ten months of
 subsequent work — that fix plus monthly data refreshes — exists solely as built
 output on `goofy`; there is no source to merge.
 
-**What AutoLL-4 tests.** The previous AutoLL-3 implementation dynamically
+**What AutoLL-6 tests.** The previous AutoLL-3 implementation dynamically
 loaded an opaque `sensor-data.js` copied from AutoLL-2's published output.
-AutoLL-4 replaces that dependency with a small, reviewable TypeScript provider
+AutoLL-6 replaces that dependency with a small, reviewable TypeScript provider
 derived from joelface's August 2026 `goofy/bg1.js`: it posts to
 `bg1.joelface.com/sensor/data`, decrypts the binary response with AES-GCM,
 reuses the result for five protected requests, and refreshes after a fetch
@@ -114,7 +118,7 @@ all work regardless, and are the bulk of what this repository adds.
 
 Login works from this fork's own origin (confirmed on device 2026-09-04).
 Disney's OneID does **not** allowlist the `responderPage` redirect URI, so
-`https://mbs1234.github.io/AutoLL-4/responder.html` authenticates normally. This was
+`https://mbs1234.github.io/AutoLL-6/responder.html` authenticates normally. This was
 the main risk in forking at all -- had OneID validated redirect URIs against a
 registered allowlist, no amount of build fixing would have produced a working
 fork.

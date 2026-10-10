@@ -52,7 +52,7 @@ describe('the shared-origin storage namespace', () => {
     );
     const offenders = sourceFiles(root)
       // Test files are included. They are merged between AutoLL-3 and
-      // AutoLL-4 exactly as source files are, so a namespace spelled out in a
+      // AutoLL-6 exactly as source files are, so a namespace spelled out in a
       // test diverges just as expensively -- and excluding them is how the
       // literals in `alert.test.ts` and `Today.test.tsx` went unnoticed.
       .filter(path => !path.endsWith('storageNamespace.ts'))

@@ -1,4 +1,4 @@
-name: Build and deploy AutoLL-4
+name: Build and deploy AutoLL-6
 
 # The app bundle and the static site around it live on two different
 # branches with no shared history:
@@ -54,9 +54,9 @@ env:
   # where `base` in vite.config.mts gets its path segment. So this value is a
   # second spelling of that one constant and must agree with it. It is kept
   # spelled out because it brands files that never pass through the bundler.
-  PAGES_ORIGIN: https://mbs1234.github.io/AutoLL-4
+  PAGES_ORIGIN: https://mbs1234.github.io/AutoLL-6
   # Immutable installer input. A branch head would let a rerun of the same
-  # AutoLL-4 commit produce a different release without passing this
+  # AutoLL-6 commit produce a different release without passing this
   # repository's review gate.
   AUTOLL2_INSTALLER_REV: a3531c6621cd8dd76582224792fceb635c93be12
 
@@ -75,7 +75,7 @@ jobs:
       - name: Check out pinned static site
         uses: actions/checkout@v5
         with:
-          # AutoLL-4 owns main; the inherited installer assets remain in the
+          # AutoLL-6 owns main; the inherited installer assets remain in the
           # reviewed AutoLL-2 source repository until they are independently
           # maintained here.
           repository: mbs1234/AutoLL-2
@@ -157,7 +157,7 @@ jobs:
             fi
           done
 
-      - name: Brand installer assets for AutoLL-4
+      - name: Brand installer assets for AutoLL-6
         run: |
           set -euo pipefail
           # index.html and autoloader.user.js hardcode joelface.github.io/bg1.
@@ -165,18 +165,18 @@ jobs:
           # build instead of this one. The static pages are inherited from
           # AutoLL-2, so their visible product name, repository links, and
           # start-page preference key must be rewritten as well. Otherwise a
-          # person installing AutoLL-4 sees AutoLL-2 and the two builds share
+          # person installing AutoLL-6 sees AutoLL-2 and the two builds share
           # that preference on Disney's origin.
           find dist -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' \) -print0 \
             | xargs -0 --no-run-if-empty \
                 sed -i \
                   -e "s|https://joelface\.github\.io/bg1|$PAGES_ORIGIN|g" \
-                  -e 's|https://github.com/mbs1234/AutoLL-2|https://github.com/mbs1234/AutoLL-4|g' \
-                  -e 's/AutoLL-2/AutoLL-4/g' \
-                  -e 's/autoll2/autoll4/g'
+                  -e 's|https://github.com/mbs1234/AutoLL-2|https://github.com/mbs1234/AutoLL-6|g' \
+                  -e 's/AutoLL-2/AutoLL-6/g' \
+                  -e 's/autoll2/autoll6/g'
           # These are the only inherited pages that make up the installation
           # path. Fail closed if a future upstream asset changes spelling and
-          # leaves AutoLL-2 branding in front of an AutoLL-4 user.
+          # leaves AutoLL-2 branding in front of an AutoLL-6 user.
           #
           # The exit status is read explicitly rather than with `if grep ...`,
           # because grep has three of them and that form conflated two: 0 is a
@@ -199,12 +199,12 @@ jobs:
             exit 1
           fi
           set +e
-          hits=$(grep -nEi 'AutoLL-2|autoll2|mbs1234/AutoLL-2' "${assets[@]}")
+          hits=$(grep -nEi 'AutoLL-2|autoll2|mbs1234/AutoLL-2|AutoLL-4|autoll4' "${assets[@]}")
           branding_status=$?
           set -e
           if [ "$branding_status" -eq 0 ]; then
             echo "$hits"
-            echo '::error::AutoLL-2 branding remains in an AutoLL-4 installer asset'
+            echo '::error::AutoLL-2 branding remains in an AutoLL-6 installer asset'
             exit 1
           fi
           if [ "$branding_status" -ne 1 ]; then
@@ -240,7 +240,7 @@ jobs:
       # nothing to degrade to, and failing is the honest answer.
       #
       # It runs before the manifest below on purpose: the guide is served, so
-      # it belongs in `autoll4-files.sha256` like every other served file.
+      # it belongs in `autoll6-files.sha256` like every other served file.
       - name: Overlay the user guide
         run: |
           set -euo pipefail
@@ -261,12 +261,12 @@ jobs:
           (
             cd dist
             find . -type f \
-              ! -name autoll4-files.sha256 \
-              ! -name autoll4-release.json \
+              ! -name autoll6-files.sha256 \
+              ! -name autoll6-release.json \
               -printf '%P\n' \
               | LC_ALL=C sort \
               | while IFS= read -r file; do sha256sum "$file"; done \
-              > autoll4-files.sha256
+              > autoll6-files.sha256
             # Every file an install path needs by name. bg1.css and
             # responder.html were missing from this list, and they are the two
             # whose absence breaks the app quietly rather than loudly -- an
@@ -292,13 +292,13 @@ jobs:
                         autoloader.user.js; do
               # Anchored to end of line so a `.map` or a same-named file in a
               # subdirectory cannot satisfy the check for the real one.
-              grep -Eq "  ${file//./\\.}$" autoll4-files.sha256 || {
+              grep -Eq "  ${file//./\\.}$" autoll6-files.sha256 || {
                 echo "::error::$file is absent from the release manifest"
                 exit 1
               }
             done
-            printf '{\n  "application": "AutoLL-4",\n  "sourceRevision": "%s",\n  "installerRevision": "%s",\n  "fileManifest": "autoll4-files.sha256"\n}\n' \
-              "$GITHUB_SHA" "$installer_rev" > autoll4-release.json
+            printf '{\n  "application": "AutoLL-6",\n  "sourceRevision": "%s",\n  "installerRevision": "%s",\n  "fileManifest": "autoll6-files.sha256"\n}\n' \
+              "$GITHUB_SHA" "$installer_rev" > autoll6-release.json
           )
 
       - name: Show what will be deployed

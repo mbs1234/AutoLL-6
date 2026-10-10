@@ -44,7 +44,7 @@ on the phone. This is what would make the main trip better, in the order it is w
   cannot: Safari's own toolbar. The alert channel had been silently dead since it
   was written — `resume()` alone does not unlock WebKit audio — and is now
   verified on the phone, on a real find.
-- **AutoLL-4 is synced** to 1.2.8 with its own sensor path intact, and verified
+- **AutoLL-6 is synced** to 1.2.8 with its own sensor path intact, and verified
   on the phone. The owner brought that sync forward to 2026-09-20, accepting that
   both builds deployed on the same day so the fallback could begin its own soak
   sooner.
@@ -69,7 +69,7 @@ before it.
 | **Now → the rehearsal's freeze** | Test and tweak against live Disney data | Items 12, 3, 8's honesty half, 13, 14 — and start the learner |
 | **21 days before the rehearsal** | Its first day appears in the date picker | A free reading that decides item 6 |
 | **The rehearsal's freeze** | The week up to its booking morning | Rehearsing the main trip's freeze is part of rehearsing the main trip |
-| **Early in that freeze** | AutoLL-3 → AutoLL-4 merge | `docs/SYNC.md`: not on an AutoLL-3 deploy day |
+| **Early in that freeze** | AutoLL-3 → AutoLL-6 merge | `docs/SYNC.md`: not on an AutoLL-3 deploy day |
 | **The rehearsal's booking morning, 7:00** | The first real booking morning | Write down what was hard: it is item 15's specification |
 | **Booking morning → check-in** | The gap before the trip | Fixes from the booking morning; item 4 if not already in |
 | **The rehearsal** | Its park days | Watch, record, and let it fail usefully |
@@ -101,7 +101,7 @@ where items 13 and 14 are aimed.
 
 **1. Never lose something silently — including between trips.** This used to mean
 the screen in your hand. It now has to mean the months between the trips as well.
-Every piece of AutoLL-4's state — the party, the watch list, the booking log and
+Every piece of AutoLL-6's state — the party, the watch list, the booking log and
 the learner's drop observations — lives in `localStorage` on Disney's origin
 (`src/kvdb.ts` wraps it directly), and nothing in `src/` can get any of it off the
 phone. WebKit deletes "all of a website's script-writable storage after seven
@@ -110,7 +110,7 @@ days of Safari use without user interaction on the site"
 naming LocalStorage. The rehearsal manufactures the learned drop times —
 `LEARNED_MIN_DAYS = 2`, and it is the first trip long enough to meet it — and the
 main trip is when they are used, weeks later. A phone that goes about a
-week of Safari use without opening AutoLL-4 in between loses them, and the plan
+week of Safari use without opening AutoLL-6 in between loses them, and the plan
 with them, and nothing says so. Item 12.
 
 **2. Learn from every live day, not only the trip days.** The learner does not
@@ -234,14 +234,14 @@ end of this file.
 > every touched key back. It refuses while any engine runs — a Time Search under
 > a pushed screen included, through `src/autopilot/running.ts` — and ends in a
 > reload, because every open screen still holds the plan it loaded. Left: the
-> on-phone round trip under *Done means*, and the port to AutoLL-4 by merge.
+> on-phone round trip under *Done means*, and the port to AutoLL-6 by merge.
 
 **Why.** Theme 1. Everything lives in `localStorage` on Disney's origin, iOS
 deletes it after about a week of Safari use without a visit, and there is no way to
 get any of it off the phone. The learned drop times that the rehearsal produces
 are the ones the main trip uses.
 
-**What.** An **Export** button that gathers everything under the `autoll4.*`
+**What.** An **Export** button that gathers everything under the `autoll6.*`
 namespace into one versioned JSON file and hands it to the share sheet —
 `navigator.share` with a file, from a user gesture — so it can go to Files,
 AirDrop or a Mac. Then a **Restore** that reads one back.
@@ -271,8 +271,8 @@ The phone keeps its own setting.
 **Risk.** A backup from a newer build, an older schema, or the other build. The
 file carries a schema version, `APP_NAME`, `BUILD_REV` and the export time, and
 restore refuses a newer schema or a different `APP_NAME` with a message rather
-than guessing. Sharing learned drops between AutoLL-3 and AutoLL-4 would be useful
-— AutoLL-4 can observe from a desktop — and is deliberately out of scope:
+than guessing. Sharing learned drops between AutoLL-3 and AutoLL-6 would be useful
+— AutoLL-6 can observe from a desktop — and is deliberately out of scope:
 `docs/SYNC.md` keeps the two stores apart, and loosening that is a decision, not a
 side effect.
 
@@ -370,7 +370,7 @@ byte-verified while the phone still ran 1.3.0. On a park day that gap is the
 difference between an emergency fix reaching the pocket and not.
 
 **What.** The owner's choice (2026-09-23): reload on its own when it finds a new
-version. Check the served manifest — `autoll4-release.json`, fetched with
+version. Check the served manifest — `autoll6-release.json`, fetched with
 `cache: 'no-store'`; Pages sends `access-control-allow-origin: *` — whenever the
 app comes to the foreground, and every fifteen minutes while it is open. When
 its `sourceRevision` is not this bundle's `BUILD_REV`, move to the new build **in
@@ -386,7 +386,7 @@ say instead that a new version is ready and loads once Autopilot is off, and
 offer a tap. Second, version skew: the chunks (`wdw.js` among them) have fixed
 names and are cached apart from `bg1.js`, so a fresh bundle can load a stale
 chunk — already possible inside today's ten-minute window. Content-hashed chunk
-names close that, and change what `autoll4-files.sha256` lists. Third, Disney's
+names close that, and change what `autoll6-files.sha256` lists. Third, Disney's
 page could refuse the fetch; then the check fails quietly and nothing changes.
 
 **Done means.** With the manifest naming another revision: with nothing running,
@@ -430,7 +430,7 @@ the window, a number with no constant, no comment and no traceable origin,
 describing engine behaviour that does not exist. That string is gone from every
 source file in `src/` and `harness/` in both repos; `Today.test.tsx:200`, `it('does
 not promise to watch a pass it is not watching')`, forbids both the phrase and
-the 13:59 timestamp it produced; and AutoLL-4's `Today.tsx` is byte-identical, so
+the 13:59 timestamp it produced; and AutoLL-6's `Today.tsx` is byte-identical, so
 the deletion is already merged downstream.
 
 What remains is smaller than the roadmap made it look, because the hard predicate
@@ -1008,7 +1008,7 @@ _Before the trips_ in its (b)-and-(c) form.
 > behaviour-neutral evening, and Dependabot's branches are still open.
 
 
-Three small diffs and one thing that is not a diff. (b), (c) and (d) are the evening: unblocked, behaviour-neutral, and untouched in both repos — `check.yml`, `jest.config.js`, `lease.ts` and `observe.ts` are byte-identical to AutoLL-4's copies. (a) is a session, and the reason it was promoted on 2026-09-17 does not survive contact with when doubts are actually raised.
+Three small diffs and one thing that is not a diff. (b), (c) and (d) are the evening: unblocked, behaviour-neutral, and untouched in both repos — `check.yml`, `jest.config.js`, `lease.ts` and `observe.ts` are byte-identical to AutoLL-6's copies. (a) is a session, and the reason it was promoted on 2026-09-17 does not survive contact with when doubts are actually raised.
 
 **(a) Record how long a change takes to land.** Retract the rehearsal deadline as stated. The claim was that a park day without this is a park day spent; for the version described — one capped row the first time a doubt settles — the rehearsal's few park days will almost certainly write zero rows. A doubt exists only when the outcome is indeterminate: `AutopilotProvider.tsx:1431-1434` raises one only when `current.dispatched && outcome?.status === 'failed' && !outcome.rejected`, and every commit whose response comes back, success or definite rejection, takes the `else if (current.dispatched)` branch at `:1449` and calls `resolveDoubt` at `:1453`, creating nothing to settle. The only other source is the deadline, and `MAX_MUTATION_MS` (`mutation.ts:7`) is `TICK_DEADLINE_MS + RENEW_INTERVAL_MS`, 90s plus 40s: a mutation has to hang 130 seconds. So the instrument samples exactly the sub-population where the response was lost *and* Plans later proved the exact requested state.
 
@@ -1024,7 +1024,7 @@ The mechanical claim about the code is nearly right and one word wrong. `Doubt.a
 
 **(c) Give the two slowest tests their own timeout.** The word is *tests*, not suites, and an implementer following "suites" edits the wrong files: Jest's `testTimeout` is per test, and `jest.config.js` sets none at all, so the 5000 ms default is in force everywhere. Measured here on a full `TZ=UTC npx jest --ci` at load average 2.4 — 1446 tests, 7.5 s wall — the two slowest individual tests in the entire run are `Home.test.tsx :: shows LL home screen` at 1714 ms and `MultiPassList.test.tsx :: shows LL availability` at 1508 ms, with third place `BookExperience.test.tsx :: performs successful booking` far back at 657 ms. The item named the right two. By *suite* wall clock the ranking is different — `AutopilotProvider.test.tsx` 5251 ms and `BookExperience.test.tsx` 4496 ms lead, with Home and MultiPassList third and fourth — which is the trap the old wording sets. Name the number and say what it is for.
 
-**(d) Pause Dependabot until January.** Nine stand open here (#1-#6, #8, #30, #31 — #7 was merged and #9 closed under `FUTURE.md` §6's plan), and two of them, the vite majors #30 and #31, cannot go green alone. The figure the item misses is AutoLL-4's own nine, all opened 2026-09-17, with two red of its own: #7, the TypeScript 7 bump this repo already investigated and closed, and #9 `eslint-plugin-react-hooks`. Eighteen across two repos, and `.github/dependabot.yml` is byte-identical in both, so pausing one leaves the other generating. Put the trade in the commit message rather than leaving it in a different document: `FUTURE.md` §6 records that Dependabot's *security* half is switched off for this repository, so pausing version updates removes the only Dependabot signal there is. The compensating control is real — `npm audit --omit=dev` is 0 and only `react` and `react-dom` ship — but it belongs where the pause is. Budget a rebased PR rather than a push: AutoLL-3's main is `strict: true` with `enforce_admins: true`, and the required context is `check`.
+**(d) Pause Dependabot until January.** Nine stand open here (#1-#6, #8, #30, #31 — #7 was merged and #9 closed under `FUTURE.md` §6's plan), and two of them, the vite majors #30 and #31, cannot go green alone. The figure the item misses is AutoLL-6's own nine, all opened 2026-09-17, with two red of its own: #7, the TypeScript 7 bump this repo already investigated and closed, and #9 `eslint-plugin-react-hooks`. Eighteen across two repos, and `.github/dependabot.yml` is byte-identical in both, so pausing one leaves the other generating. Put the trade in the commit message rather than leaving it in a different document: `FUTURE.md` §6 records that Dependabot's *security* half is switched off for this repository, so pausing version updates removes the only Dependabot signal there is. The compensating control is real — `npm audit --omit=dev` is 0 and only `react` and `react-dom` ship — but it belongs where the pause is. Budget a rebased PR rather than a push: AutoLL-3's main is `strict: true` with `enforce_admins: true`, and the required context is `check`.
 
 **Done means.** The item had none, which is part of why it drifted. Four, each failing on HEAD. (a): a `lease.test.ts` case that makes `localStorage.setItem` throw for the timing key only and asserts `reconcile()` still removes the doubt from *both* the volatile and the durable store — there is no timing instrumentation anywhere in `src` or `harness` today, so it fails now, and it is also the test that fails on the obvious implementation. Write it knowing `FUTURE.md` §6's warning that `volatileQuarantine` is module state `beforeEach` cannot reset, and that three cases already clean up by hand in a `finally` (`lease.test.ts:235`, `:267`, `:627`). (b): a branch with a deliberately broken lockfile reports one red step, not five. (c): `jest.config.js` carries a `testTimeout` with a comment naming the two tests and the margin. (d): `.github/dependabot.yml` is paused in both repos, in one PR each, with the security-half trade written into the message.
 
@@ -1098,7 +1098,7 @@ id, name, `land`, `type`, `geo`, `tier`, `priority`, `avgWait`, and for Jingle
 Cruise a `refillWindows` block (`src/api/data/wdw.ts:295-310`) — plus nulling
 the old id in the Ignored block, plus a pin in `src/api/resortData.test.ts`
 beside the three at `:146-148`. `wdw.ts` is byte-identical between AutoLL-3 and
-AutoLL-4 today and no test compares the two, so the edit is made once in
+AutoLL-6 today and no test compares the two, so the edit is made once in
 AutoLL-3 and reaches the fallback by merge, never by a second hand-edit.
 
 **When.** Not before roughly Nov 27, and the date is not bookkeeping.
@@ -2061,7 +2061,7 @@ reconsidered and rejected again, so the next pass does not rediscover them:
 
 - **Running as a Home Screen web app.** It would dissolve three problems at once:
   notifications as a second alert channel, no Safari toolbar to guard, and storage
-  exempt from the seven-day cap. It is not available. AutoLL-4 has to run on
+  exempt from the seven-day cap. It is not available. AutoLL-6 has to run on
   Disney's own origin to use the Disney session, and a Home Screen web app sends
   navigation outside its own scope back to Safari. Recorded so it is not
   rediscovered.

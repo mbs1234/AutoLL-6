@@ -1,6 +1,6 @@
-# AutoLL-4 User Guide
+# AutoLL-6 User Guide
 
-AutoLL-4 books Walt Disney World Lightning Lane Multi Passes from the phone in
+AutoLL-6 books Walt Disney World Lightning Lane Multi Passes from the phone in
 your pocket while you are in the park. You tell it which attractions you want,
 in what order, and between which times; it watches Disney's tip board and takes
 what appears — including in the two-second window when a scheduled drop lands.
@@ -15,7 +15,7 @@ Two things are true of the whole app and worth reading first:
   selections at a time, one Tier 1 until somebody taps in, one booking per
   attraction per day. What it has over you is that it is faster and more
   attentive than you are at 7:00:02.
-- **Keep Disney's own app as the source of truth.** AutoLL-4 is unofficial,
+- **Keep Disney's own app as the source of truth.** AutoLL-6 is unofficial,
   experimental, and can stop working the day Disney changes an endpoint. When
   the two disagree about what you hold, Disney is right.
 
@@ -35,7 +35,7 @@ park morning get made weeks before it.
 
 ## 1. Install it
 
-Open the [setup page](https://mbs1234.github.io/AutoLL-4/) **on the phone you
+Open the [setup page](https://mbs1234.github.io/AutoLL-6/) **on the phone you
 will actually carry in the park** — not on a laptop. The whole app is built for
 a phone-width screen.
 
@@ -47,26 +47,26 @@ There are two ways in:
 | When it runs | Only when you tap it | Automatically on Disney's Lightning Lane pages |
 | Needs | Nothing | A userscript manager (Userscripts on iOS, Tampermonkey on Android) |
 
-Pick the userscript if you want AutoLL-4 to appear by itself; pick the
+Pick the userscript if you want AutoLL-6 to appear by itself; pick the
 bookmarklet if you would rather decide each time.
 
-**Install only one AutoLL userscript.** AutoLL-4, AutoLL-3 and AutoLL v1.0 all
+**Install only one AutoLL userscript.** AutoLL-6, AutoLL-3 and AutoLL v1.0 all
 match `disneyworld.disney.go.com/vas/`, so multiple enabled autoloaders fight
 over the page. Multiple *bookmarklets* are fine — each only runs when tapped.
 
-**Nothing carries over from AutoLL-3 or v1.0.** AutoLL-4 keeps its storage under
-`autoll4.*` and never reads the other builds' keys. It starts completely empty:
+**Nothing carries over from AutoLL-3 or v1.0.** AutoLL-6 keeps its storage under
+`autoll6.*` and never reads the other builds' keys. It starts completely empty:
 no party, no watch list, not even the accepted warning. Their data is untouched,
 but you rebuild here from scratch. Do it now, not at the gate.
 
-**Telling the builds apart.** AutoLL-4 names its browser tab `AutoLL-4`; the
+**Telling the builds apart.** AutoLL-6 names its browser tab `AutoLL-6`; the
 build name is also the last line of the Settings menu. It uses a DNA favicon
 (🧬), while AutoLL-3 uses a flask and v1.0 uses a bolt.
 
 ## 2. First run
 
 Run the bookmarklet on a page whose address begins `disneyworld.disney.go.com`.
-On any other Disney page the tab is silently sent to AutoLL-4's start page
+On any other Disney page the tab is silently sent to AutoLL-6's start page
 instead — if your tab suddenly becomes a GitHub Pages page, that is what
 happened.
 
@@ -74,7 +74,7 @@ happened.
 experimental, unofficial and unwarranted. Tap **Accept** at the bottom. It never
 appears again in that browser.
 
-**Signing in.** AutoLL-4 never asks for your Disney password. It loads Disney's
+**Signing in.** AutoLL-6 never asks for your Disney password. It loads Disney's
 own OneID sheet, which opens by itself, and Disney hands back a session token
 that is held in your browser only. If the sheet does not appear, the card says
 "Disney sign-in could not start. Check your connection and try again." and offers
@@ -384,7 +384,7 @@ requests. The panel disappears the moment the booking date is today.
 
 ## 10. Starting up
 
-Launch AutoLL-4 the way you installed it. You land on the tab you were last on —
+Launch AutoLL-6 the way you installed it. You land on the tab you were last on —
 usually **Today**.
 
 **Autopilot always starts off.** The on/off state is deliberately not
@@ -482,7 +482,7 @@ Pocket mode guards the page. It cannot guard Safari's own toolbar, because no
 web page can cover or disable browser chrome — and the **back** button is the
 one that really hurts, because it navigates away and destroys the run. iOS
 **Guided Access** is what stops a pocket reaching it. It is an iPhone and iPad
-feature; running AutoLL-4 from a desktop browser, none of this applies.
+feature; running AutoLL-6 from a desktop browser, none of this applies.
 
 **Set it up once.** Settings → Accessibility → **Guided Access**, turn it on,
 then:
@@ -506,7 +506,7 @@ Guided Access screen, circle the areas to disable with your finger, then tap
   you use first: if you moved the address bar to the top, this matters as much
   as the bottom.
 
-Leave the middle alone. That is where AutoLL-4 is.
+Leave the middle alone. That is where AutoLL-6 is.
 
 **Two ways to run it.** Circle the strips and leave touch on, and Pocket mode
 still works normally — three taps lift the guard and you can check on things
@@ -917,7 +917,7 @@ screen.** Everything else in this section is a variation on that one test.
 
 | Banner | Meaning | What to do |
 |---|---|---|
-| `Network request failed (403 guests)` | Disney's filter is refusing this app | Book in Disney's app. When Autopilot or a search meets one, AutoLL-4 stops everything itself (below) |
+| `Network request failed (403 guests)` | Disney's filter is refusing this app | Book in Disney's app. When Autopilot or a search meets one, AutoLL-6 stops everything itself (below) |
 | `Network request failed (no response guests)` | Your signal dropped — an 8-second timeout | Move, or switch wifi off. **If you were mid-booking, check Disney's Plans first** |
 | `Too many requests just now.` | You tapped faster than 5 requests/second | Wait five seconds |
 | `Unknown error occurred` | No status at all — usually the rate limit, on screens that do not name it | Wait five seconds and retry once |
@@ -970,7 +970,7 @@ used to take two, off then on. (A stop caused by an expired session is
 different: signing back in remounts the app with Autopilot off, so there
 **Turn on autopilot** starts it.)
 
-When it gives up it raises one alert, "AutoLL-4 has stopped", on every channel
+When it gives up it raises one alert, "AutoLL-6 has stopped", on every channel
 it can. On an iPhone in Safari that is the sound alone: there is no
 notification to carry the words and no vibration, so what reaches you is one
 two-note chime, the same as every other alert. Nothing in it says the run has
@@ -1075,7 +1075,7 @@ still displays here.
 
 **Individual Lightning Lane is not booked.** Only Multi Pass.
 
-**It cannot protect its own storage.** Everything AutoLL-4 keeps — your party,
+**It cannot protect its own storage.** Everything AutoLL-6 keeps — your party,
 your watch list, and what it has learned about drops — is stored by your browser
 for Disney's website. Safari, on an iPhone, iPad or Mac, deletes a website's
 stored data after about a week of Safari use without a visit to that site, and
@@ -1094,7 +1094,7 @@ seen. Your sign-in and settings, dry run included, stay as they are. Reload the
 page afterwards. If a restore fails part-way and the original plan cannot be put
 back either, a red notice says "The original plan isn’t fully back". Keep the
 page open, tap **Export original plan** first, then **Retry recovering original
-plan**, and reload when it says it has recovered. **Between trips, open AutoLL-4
+plan**, and reload when it says it has recovered. **Between trips, open AutoLL-6
 at least once a week** as well, or it may start empty next time.
 
 **Rough edges, as of 1.9.1.** None known beyond what

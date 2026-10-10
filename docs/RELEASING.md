@@ -1,4 +1,4 @@
-# Building, verifying and releasing AutoLL-4
+# Building, verifying and releasing AutoLL-6
 
 Moved out of `README.md` on 2026-09-21, when that file was cut back to an
 introduction. Nothing here changed in the move, and the two policy differences
@@ -34,8 +34,8 @@ the code. [SECURITY.md](../SECURITY.md) covers token handling.
 ## Verifying a build
 
 Every deploy writes
-[`autoll4-release.json`](https://mbs1234.github.io/AutoLL-4/autoll4-release.json)
-and `autoll4-files.sha256` into the published site: the source revisions the
+[`autoll6-release.json`](https://mbs1234.github.io/AutoLL-6/autoll6-release.json)
+and `autoll6-files.sha256` into the published site: the source revisions the
 site is assembled from, plus a SHA-256 of every file served. Point a browser at
 it before a park day and confirm the build on your device is the one the
 repository says it is — or read the revision from the Settings menu.
@@ -46,7 +46,7 @@ served bundle byte for byte:
 ```bash
 npm run build
 shasum -a 256 dist/bg1.js
-curl -s https://mbs1234.github.io/AutoLL-4/bg1.js | shasum -a 256
+curl -s https://mbs1234.github.io/AutoLL-6/bg1.js | shasum -a 256
 ```
 
 Build the commit the manifest names, not a branch — the build embeds its own
@@ -55,13 +55,13 @@ revision, so a build of a different commit will differ for that reason alone.
 ## Releasing, and rolling back
 
 A tagged release is that pair of manifest files together with the tag, and both
-are attached to the [release](https://github.com/mbs1234/AutoLL-4/releases) as
+are attached to the [release](https://github.com/mbs1234/AutoLL-6/releases) as
 well as served from the site. Re-running the deploy workflow against a tag
 rebuilds the same site, which is what makes a rollback a one-command operation
 rather than a rebuild from memory:
 
 ```bash
-gh workflow run deploy.yml --ref autoll4-v1.3.0
+gh workflow run deploy.yml --ref autoll6-v1.3.0
 ```
 
 The release is not complete until `gh release view` lists both manifest files; a
@@ -77,9 +77,9 @@ The `github-pages` environment has a deployment branch policy. Where it permits
 `main` only, a workflow dispatched against a tag builds correctly and is then
 refused at the deploy step — **with no steps recorded and nothing naming the
 cause.** AutoLL-3 hit this first; it happened again here on the first
-`autoll4-v1.2.8` tag dispatch (run 35549070005: every build step green, the
+`autoll6-v1.2.8` tag dispatch (run 35549070005: every build step green, the
 `deploy` job failed with an empty step list) and was fixed by adding a
-`tag: autoll4-v*` policy beside the branch one.
+`tag: autoll6-v*` policy beside the branch one.
 
 If the deploy job fails with zero steps, this is why. Anything forking either
 repository has to add the policy again.

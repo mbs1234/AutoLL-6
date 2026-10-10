@@ -1,6 +1,6 @@
-# AutoLL-4
+# AutoLL-6
 
-AutoLL-4 books Walt Disney World Lightning Lane Multi Passes while you are in
+AutoLL-6 books Walt Disney World Lightning Lane Multi Passes while you are in
 the park, from a phone or a desktop browser. You tell it which attractions you
 want, in what order, and between which times; it watches Disney's tip board and
 takes what appears — including in the two-second window when a scheduled drop
@@ -20,7 +20,7 @@ actually hold.
 
 ## Install
 
-Open the [setup page](https://mbs1234.github.io/AutoLL-4/) on the device you
+Open the [setup page](https://mbs1234.github.io/AutoLL-6/) on the device you
 will use and install **either** the bookmarklet **or** the userscript.
 
 |  | Bookmarklet | Userscript |
@@ -36,7 +36,7 @@ Three things worth knowing before you do:
 - **It installs alongside AutoLL-3 and v1.0 without touching them.** Separate
   browser storage, separate notifications, its own tab name, icon and address.
   Nothing the other builds hold is disturbed.
-- **Nothing carries over.** Because the storage is separate, AutoLL-4 starts
+- **Nothing carries over.** Because the storage is separate, AutoLL-6 starts
   empty. Re-pick your party and rebuild your watch list before the trip, not at
   the gate.
 - **Install one AutoLL userscript, not two.** Every build's autoloader matches
@@ -79,7 +79,7 @@ page gets, so there is a **Test sound** button that proves the channel works
 before you rely on it.
 
 **Keeps a copy.** Safari deletes what a website has stored after about a week
-without a visit, and everything AutoLL-4 knows is stored that way. **Backup and
+without a visit, and everything AutoLL-6 knows is stored that way. **Backup and
 Restore**, in the Settings menu, saves your plan, your party and every drop the
 learner has seen to a file you keep, and puts it back on a phone that has lost
 it. Your Disney sign-in is never in it.
@@ -90,12 +90,12 @@ Disney's own rules allow.
 
 ## Using it
 
-**[User guide](https://mbs1234.github.io/AutoLL-4/guide.html)** — setup, the park
+**[User guide](https://mbs1234.github.io/AutoLL-6/guide.html)** — setup, the park
 day, every screen, and what to do when something breaks.
 [docs/USER-GUIDE.md](docs/USER-GUIDE.md) is the same text in this repository.
 
 Release notes for each version are on the
-[releases page](https://github.com/mbs1234/AutoLL-4/releases). Building,
+[releases page](https://github.com/mbs1234/AutoLL-6/releases). Building,
 verifying a build and rolling one back are in
 [docs/RELEASING.md](docs/RELEASING.md); [FORK.md](FORK.md) explains why a plain
 upstream build does not run, and [docs/SYNC.md](docs/SYNC.md) covers keeping
@@ -103,7 +103,7 @@ this build and AutoLL-3 in step.
 
 ## Acknowledgements
 
-AutoLL-4 exists because of [joelface/bg1](https://github.com/joelface/bg1) by
+AutoLL-6 exists because of [joelface/bg1](https://github.com/joelface/bg1) by
 Joel Bruick, which made booking from a browser possible at all, and
 [jgeurts/bg1](https://github.com/jgeurts/bg1), whose booking work this builds on
 directly.

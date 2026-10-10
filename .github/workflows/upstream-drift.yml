@@ -1,19 +1,19 @@
 name: Upstream drift
 
-# AutoLL-3 and AutoLL-4 are kept as mutual fallbacks, and fixes flow from
-# AutoLL-3 to AutoLL-4 by merge. Nothing here performs that merge. This job
+# AutoLL-4 and AutoLL-6 are kept as mutual fallbacks, and fixes flow from
+# AutoLL-4 to AutoLL-6 by merge. Nothing here performs that merge. This job
 # only counts what is waiting and says so, because the thing that actually
 # goes wrong is not the merging -- it is forgetting there was anything to
 # merge until the morning a park day needs the fallback.
 #
 # It deliberately does NOT fail on a fresh commit. Lag between the two builds
-# is the point of having two: a change that breaks AutoLL-3 should have some
+# is the point of having two: a change that breaks AutoLL-4 should have some
 # days to show itself before it is carried into the build that is supposed to
 # still work. What it fails on is a commit that has been sitting unmerged past
 # that soak, which is forgetting rather than waiting.
 #
 # It cannot tell you whether a waiting commit is SAFE to merge. A merge can
-# carry AutoLL-3's local sensor generation into this build with every test
+# carry AutoLL-4's sensor provider into this build with every test
 # green -- both repos' `jest.config.js` maps `.*/sensor-data$` to a mock, so no
 # suite here ever loads the file that decides whether the payload is generated
 # locally or fetched from the endpoint. Read `docs/SYNC.md` before merging, and
@@ -52,27 +52,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Count what AutoLL-3 has that this build does not
+      - name: Count what AutoLL-4 has that this build does not
         env:
           SOAK_DAYS: ${{ github.event.inputs.soak_days || '7' }}
         run: |
           set -euo pipefail
 
-          git remote add autoll3 https://github.com/mbs1234/AutoLL-3.git
-          git fetch --quiet autoll3 main
+          git remote add autoll4 https://github.com/mbs1234/AutoLL-4.git
+          git fetch --quiet autoll4 main
 
-          waiting=$(git rev-list --count HEAD..autoll3/main)
+          waiting=$(git rev-list --count HEAD..autoll4/main)
           cutoff=$(date -u -d "${SOAK_DAYS} days ago" +%s)
 
           {
             echo "## Upstream drift"
             echo
-            echo "AutoLL-3 has **${waiting}** commit(s) this build does not have."
+            echo "AutoLL-4 has **${waiting}** commit(s) this build does not have."
             echo
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$waiting" -eq 0 ]; then
-            echo "In step with AutoLL-3." >> "$GITHUB_STEP_SUMMARY"
+            echo "In step with AutoLL-4." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
@@ -80,20 +80,20 @@ jobs:
             echo '| age | commit | subject |'
             echo '|---|---|---|'
             git log --reverse --date=short \
-                --format='| %ad | `%h` | %s |' HEAD..autoll3/main
+                --format='| %ad | `%h` | %s |' HEAD..autoll4/main
             echo
           } >> "$GITHUB_STEP_SUMMARY"
 
           # `%ct` is the committer date as a unix timestamp, which is what the
           # soak is measured against -- author date can be far older than the
-          # day a commit actually landed on AutoLL-3's main.
-          stale=$(git log --format='%ct %h %s' HEAD..autoll3/main \
+          # day a commit actually landed on AutoLL-4's main.
+          stale=$(git log --format='%ct %h %s' HEAD..autoll4/main \
                   | awk -v c="$cutoff" '$1 < c { $1=""; print substr($0,2) }')
 
           if [ -z "$stale" ]; then
             {
               echo "Still inside the ${SOAK_DAYS}-day soak. Nothing to do yet --"
-              echo "letting a change prove itself in AutoLL-3 first is deliberate."
+              echo "letting a change prove itself in AutoLL-4 first is deliberate."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
@@ -108,13 +108,13 @@ jobs:
             echo "Merge these when you next have time to watch the result:"
             echo
             echo '```bash'
-            echo 'git fetch autoll3 && git merge autoll3/main'
+            echo 'git fetch autoll4 && git merge autoll4/main'
             echo '```'
             echo
             echo "Read \`docs/SYNC.md\` first. Do not merge on a park day, and"
-            echo "not on a day AutoLL-3 itself deployed -- two builds changed"
+            echo "not on a day AutoLL-4 itself deployed -- two builds changed"
             echo "together are one build."
           } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "::error::AutoLL-3 has commits waiting past the ${SOAK_DAYS}-day soak."
+          echo "::error::AutoLL-4 has commits waiting past the ${SOAK_DAYS}-day soak."
           exit 1

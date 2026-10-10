@@ -728,7 +728,7 @@ published rules allow.
 
 **Recorded 2026-09-23.** Running as a Home Screen web app — it would dissolve
 three problems at once, with notifications as a second alert channel, no Safari
-toolbar to guard and storage exempt from the seven-day cap, but AutoLL-4 has to
+toolbar to guard and storage exempt from the seven-day cap, but AutoLL-6 has to
 run on Disney's own origin to use the Disney session, and a Home Screen web app
 sends navigation outside its scope back to Safari. Autopilot booking every day of
 a stay on its own on the booking morning — the engine is built around one booking
