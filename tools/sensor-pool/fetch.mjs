@@ -61,7 +61,10 @@ for (let i = 0; i < count; i++) {
   if (i > 0) await new Promise(r => setTimeout(r, gap));
   const rec = await fetchOne();
   if (seen.has(rec.payload)) { skipped++; continue; }
-  appendFileSync(outFile, JSON.stringify(rec) + '\n');
+  appendFileSync(
+    outFile,
+    JSON.stringify({ iso: new Date(rec.t).toISOString(), ...rec }) + '\n'
+  );
   added++;
   console.log(`captured ${new Date(rec.t).toISOString()} payload ${rec.payload.length} chars`);
 }
