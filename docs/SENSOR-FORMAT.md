@@ -119,27 +119,29 @@ question this document left open:
 - **Payloads die young.** Three distinct never-reused specimens at
   2.3-3.4 h of age all drew `403` (Akamai "Access Denied"), while age-0
   controls passed throughout. The cliff is somewhere in (0, 2.5 h].
-- **~~The old `3,a` format is dead~~ CORRECTED 2026-10-11:** the first
-  retest composed the legacy payload from an incomplete prefix -- one of
-  the TWO static 172-char device sections, 349 chars total. The owner
-  verified in production the same day that AutoLL-3 (which books through
-  `3,a`) passes the gate, so the format is alive and the composition was
-  at fault. A retest with the full prefix
-  (`docs/sensor-format/old-3a-prefix.txt`) is pending; if it passes with
-  a locally generated tail, the legacy composer is a fully local sensor
-  path. If it fails where AutoLL-3 succeeds, the tail from
-  `/sensor-data/random` is service-issued rather than arbitrary
-  randomness.
+- **The `3,a` tail is service-issued.** A locally composed `3,a` payload
+  from the FULL static prefix (`docs/sensor-format/old-3a-prefix.txt`,
+  both 172-char device sections) plus a locally generated random tail
+  drew `403`, twice -- while the owner verified in production the same
+  day that AutoLL-3, which fetches its tail live from
+  `/sensor-data/random`, passes the gate. The tail is therefore a
+  required, structured component, not arbitrary randomness; the
+  endpoint's name is a misnomer.
 - **Payloads are not client-bound.** Captures from different IPs
   (residential and GitHub Actions) carry the identical UUID and static
   device blob; the service emits one global emulated device.
 
 Consequences: pooling is dead as an independence strategy (no payload
-survives from a morning capture to an afternoon drop); the `5,i` payload
-must be fetched live at booking time, which makes the service a hard
-dependency and failover/monitoring the available resilience work. The
-legacy `3,a` composer is a live independence candidate -- see the
-corrected finding above -- pending a retest with its full prefix.
+survives from a morning capture to an afternoon drop), and both live
+mechanisms require a live component from the service -- issued payloads
+for `5,i`, an issued tail for `3,a`. The `5,i` payload must be fetched
+at or near booking time, which makes the service a hard dependency.
+The available work is around it: a prefetch burst just before a booking
+window (minutes-old is far inside the cliff), a service-alive canary in
+the daily capture, a failover proxy for brief outages, and the browser
+probe as a pre-trip gate check. Fully owning either mechanism would
+require reproducing a service-issued, opaque token format -- research
+work with a guaranteed expiry, since Disney rotates the formats.
 
 ## Reproducing this analysis
 
