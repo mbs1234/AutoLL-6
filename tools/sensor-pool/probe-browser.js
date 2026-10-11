@@ -95,12 +95,10 @@
   log('loading pool from the sensor-pool branch...');
   const poolRes = await fetch(POOL_URL, { signal: AbortSignal.timeout(15000) });
   if (!poolRes.ok) throw new Error('pool fetch returned ' + poolRes.status);
-  const pool = (await poolRes.text()).split('\n').filter(Boolean).map((line, i) => {
+  const poolBranch = (await poolRes.text()).split('\n').filter(Boolean).map(line => {
     const rec = JSON.parse(line);
-    return { ...rec, ref: 'line' + (i + 1), ageH: (Date.now() - rec.t) / 36e5 };
+    return { ...rec, ageH: (Date.now() - rec.t) / 36e5 };
   });
-  console.log('pool: ' + pool.length + ' payloads, ages ' +
-    Math.min(...pool.map(p => p.ageH)).toFixed(1) + 'h..' + Math.max(...pool.map(p => p.ageH)).toFixed(1) + 'h');
 
   // ---- control ----
   log('control: fetching fresh payload...');
@@ -126,6 +124,31 @@
 
   const results = [{ ref: 'control', ageH: 0, status: c.status, pass: true, gatePass: true }];
   window.__sensorResults = results; // inspectable anytime: window.__sensorResults
+
+  // ---- stock the local pool: every run captures specimens it can age ----
+  // These live in this page's localStorage, tagged 'local' (as opposed to
+  // the Actions-captured ones on the sensor-pool branch). Identity checks
+  // showed payloads are not client-bound, so a locally captured specimen is
+  // representative -- and a fresh local one is what the low-threshold cells
+  // need, because every branch specimen is already hours old. Available
+  // anytime as: await __sensorCapture(2)
+  const CAPTURES_KEY = 'autoll6.sensorCaptures';
+  window.__sensorCapture = async (n = 2) => {
+    const stored = JSON.parse(localStorage.getItem(CAPTURES_KEY) ?? '[]');
+    const seen = new Set(stored.map(s => s.payload));
+    let added = 0;
+    for (let i = 0; i < n; i++) {
+      if (i > 0) await sleep(1200);
+      const payload = await freshPayload();
+      if (seen.has(payload)) continue;
+      stored.push({ t: Date.now(), payload });
+      added++;
+    }
+    localStorage.setItem(CAPTURES_KEY, JSON.stringify(stored));
+    console.log('captured ' + added + ' payloads; local pool: ' + stored.length);
+    return stored.length;
+  };
+  await window.__sensorCapture(2);
 
   // ---- legacy 3,a: the composer this family owns outright ----
   // The dead format was a static device blob plus a literal random tail,
@@ -153,7 +176,20 @@
   }
 
   // ---- ladder ----
+  // Pool = branch specimens (Actions-captured) + local captures. Each test
+  // goes to a specimen's FIRST use, and among candidates prefers the one
+  // whose age sits CLOSEST ABOVE the threshold -- a run soon after a capture
+  // therefore tests the interior of the cliff (is a 30-60 min-old payload
+  // still accepted?), which is exactly what a prefetch burst needs to know.
   let done = 0;
+  const localCaptures = JSON.parse(localStorage.getItem('autoll6.sensorCaptures') ?? '[]');
+  const pool = [
+    ...poolBranch.map(p => ({ ...p, origin: 'actions' })),
+    ...localCaptures.map(p => ({ ...p, origin: 'local' })),
+  ].map((p, i) => ({ ...p, ref: (p.origin === 'local' ? 'local' : 'branch') + i }));
+  console.log('pool: ' + pool.length + ' payloads (' +
+    localCaptures.length + ' local, ' + poolBranch.length + ' branch), ages ' +
+    Math.min(...pool.map(p => p.ageH)).toFixed(1) + 'h..' + Math.max(...pool.map(p => p.ageH)).toFixed(1) + 'h');
   for (const threshold of THRESHOLDS_H) {
     if (done >= MAX_TESTS) break;
     // Spend each test on a specimen's FIRST use: a reused specimen confounds
@@ -161,10 +197,10 @@
     // rotation hypothesis says to avoid.
     const pick = pool
       .filter(p => p.ageH >= threshold && !results.some(r => r.ref === p.ref))
-      .sort((a, b) => b.ageH - a.ageH)[0];
+      .sort((a, b) => (a.ageH - threshold) - (b.ageH - threshold) || b.ageH - a.ageH)[0];
     if (!pick) continue;
     await sleep(PACE_MS);
-    log('ladder ' + threshold + 'h: testing ' + pick.ref + ' (age ' + pick.ageH.toFixed(1) + 'h)...');
+    log('ladder ' + threshold + 'h: testing ' + pick.ref + ' (' + pick.origin + ', age ' + pick.ageH.toFixed(1) + 'h)...');
     const r = await guests(pick.payload);
     if (r.status === 401) {
       log('  HTTP 401 -- session dead mid-ladder. Sign in again; nothing further recorded this run.');
