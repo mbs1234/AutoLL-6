@@ -21,6 +21,9 @@
   const MAX_TESTS = 4;              // ladder cells per run
   const PACE_MS = 15000;            // between guests calls
   const USE_COUNT_TEST = false;     // true: send one fresh payload 8 times
+  const TEST_3A = true;             // true: also fire one locally-composed
+                                    // legacy 3,a payload (the format this
+                                    // family owns outright)
   const THRESHOLDS_H = [0.5, 1, 2, 4, 8, 24, 48, 96, 168, 336];
   // ---------------------------------------------------------------------
 
@@ -121,8 +124,31 @@
   }
   log('control (age 0): HTTP ' + c.status + ' GATE PASS (business answer)');
 
+  const results = [{ ref: 'control', ageH: 0, status: c.status, pass: true, gatePass: true }];
+  window.__sensorResults = results; // inspectable anytime: window.__sensorResults
+
+  // ---- legacy 3,a: the composer this family owns outright ----
+  // The dead format was a static device blob plus a literal random tail,
+  // composed client-side -- no service, no expiry by construction. If Disney
+  // still accepts it, sensor independence is already owned. The blob is the
+  // one committed at docs/sensor-format/old-3a-static.txt; the tail mimics
+  // the 1.5-3 KB of base64 randomness the old endpoint used to supply.
+  if (TEST_3A) {
+    const LEGACY_BLOB = 'DG0oDh1QTz8ZsxkaARUg25tPZ6gOmXo+eZI1DD+MzwfWrCbxfeN+9CIj968tE97Z+Om4skjwd+9EBSTVoIRkqq55rsJQ4EluLRFkdJfCl16POdor+n+Q+93MmZgo8wr5SF7ui5sSkfAjDXx7r3saWsrtsjIrpHN8MrCUbD54Zkw=';
+    const tailBytes = crypto.getRandomValues(new Uint8Array(2048));
+    const tail = btoa(String.fromCharCode(...tailBytes));
+    const legacy = '3,a,' + LEGACY_BLOB + '$' + tail + '$,,';
+    await sleep(PACE_MS);
+    log('legacy 3,a (locally composed): testing...');
+    const l = await guests(legacy);
+    const alive = l.status !== 403 && l.status !== 401;
+    log('  legacy 3,a: HTTP ' + l.status + (alive ? ' GATE PASS -- THE OWNED COMPOSER IS ALIVE' :
+      l.status === 403 ? ' GATE FAIL -- format is dead' : ''));
+    if (l.detail) console.log('  body: ' + l.detail);
+    results.push({ ref: 'legacy-3a', kind: 'legacy', ageH: 0, status: l.status, gatePass: alive });
+  }
+
   // ---- ladder ----
-  const results = [{ ref: 'control', ageH: 0, status: c.status, pass: true }];
   let done = 0;
   for (const threshold of THRESHOLDS_H) {
     if (done >= MAX_TESTS) break;
