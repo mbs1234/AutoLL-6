@@ -119,14 +119,16 @@ question this document left open:
 - **Payloads die young.** Three distinct never-reused specimens at
   2.3-3.4 h of age all drew `403` (Akamai "Access Denied"), while age-0
   controls passed throughout. The cliff is somewhere in (0, 2.5 h].
-- **The `3,a` tail is service-issued.** A locally composed `3,a` payload
-  from the FULL static prefix (`docs/sensor-format/old-3a-prefix.txt`,
-  both 172-char device sections) plus a locally generated random tail
-  drew `403`, twice -- while the owner verified in production the same
-  day that AutoLL-3, which fetches its tail live from
-  `/sensor-data/random`, passes the gate. The tail is therefore a
-  required, structured component, not arbitrary randomness; the
-  endpoint's name is a misnomer.
+- **The `3,a` tail is service-issued -- proven by controlled experiment.**
+  A 2x2 under identical conditions (owned 349-char prefix, same endpoint,
+  same session): desktop UA + live tail = `403`; desktop UA + local random
+  tail = `403`; **iPhone UA + live tail = `410` gate pass**; iPhone UA +
+  local random tail = `403`. Two independent requirements confirmed: the
+  client must present a mobile identity (AutoLL-3 has never worked from a
+  desktop browser -- SYNC.md -- and now the mechanism is visible), and the
+  tail must be issued by the service; locally generated randomness fails
+  even in an otherwise-valid mobile context. The tail is an encrypted or
+  otherwise keyed token, not randomness the endpoint's name suggests.
 - **Payloads are not client-bound.** Captures from different IPs
   (residential and GitHub Actions) carry the identical UUID and static
   device blob; the service emits one global emulated device.
@@ -137,11 +139,19 @@ mechanisms require a live component from the service -- issued payloads
 for `5,i`, an issued tail for `3,a`. The `5,i` payload must be fetched
 at or near booking time, which makes the service a hard dependency.
 The available work is around it: a prefetch burst just before a booking
-window (minutes-old is far inside the cliff), a service-alive canary in
-the daily capture, a failover proxy for brief outages, and the browser
-probe as a pre-trip gate check. Fully owning either mechanism would
-require reproducing a service-issued, opaque token format -- research
-work with a guaranteed expiry, since Disney rotates the formats.
+window (a 0.65h-old payload passed on 2026-10-11, so minutes-to-an-hour
+staleness is safe), a service-alive canary in the daily capture, a
+failover proxy for brief outages, and the browser probe as a pre-trip
+gate check. Fully owning either mechanism would require reproducing a
+service-issued, opaque token format -- research work with a guaranteed
+expiry, since Disney rotates the formats.
+
+The remaining open measurement is **tail shelf life**: if issued tails
+outlive payloads, a stockpile of real tails plus the owned 349-char
+prefix composes offline, and AutoLL-3's format regains practical
+independence (inventory top-ups instead of live dependency). The
+browser probe's tail ladder (`TAIL_LADDER`) measures this as captured
+tails age.
 
 ## Reproducing this analysis
 
