@@ -37,6 +37,10 @@
 
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const log = s => console.log('%c' + s, 'font-weight:bold');
+  // Record the identity this run executed under: AutoLL-3's format is
+  // phone-gated, so a 3,a result from a desktop UA is not evidence about
+  // phones. Network conditions / device emulation override this string.
+  console.log('user agent: ' + navigator.userAgent);
 
   const auth = JSON.parse(localStorage.getItem('autoll6.auth') ?? 'null');
   if (!auth?.swid || !auth?.accessToken) {
