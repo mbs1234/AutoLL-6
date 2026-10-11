@@ -152,8 +152,11 @@
   let done = 0;
   for (const threshold of THRESHOLDS_H) {
     if (done >= MAX_TESTS) break;
+    // Spend each test on a specimen's FIRST use: a reused specimen confounds
+    // age with use-count, and reuse-burn is exactly what the five-use
+    // rotation hypothesis says to avoid.
     const pick = pool
-      .filter(p => p.ageH >= threshold && !results.some(r => r.ref === p.ref && r.threshold === threshold))
+      .filter(p => p.ageH >= threshold && !results.some(r => r.ref === p.ref))
       .sort((a, b) => b.ageH - a.ageH)[0];
     if (!pick) continue;
     await sleep(PACE_MS);
