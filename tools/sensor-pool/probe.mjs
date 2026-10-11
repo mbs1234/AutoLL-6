@@ -19,7 +19,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import crypto from 'node:crypto';
-import readline from 'node:readline/promises';
+import readline from 'node:readline';
 
 const GUESTS_URL =
   'https://disneyworld.disney.go.com/ea-vas/planning/api/v1/experiences/guest/guests';
@@ -67,29 +67,89 @@ function range(pool) {
   return { min: Math.min(...ages).toFixed(1), max: Math.max(...ages).toFixed(1) };
 }
 
+function validSwid(value) {
+  return /^\{?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}?$/.test(value);
+}
+
+function validToken(value) {
+  return /^[\x20-\x7E]+$/.test(value) && value.length >= 32;
+}
+
+const RETRY_WITH_COPY =
+  (field) =>
+    `  that does not look like the ${field}. Two easy mistakes produce this:\n` +
+    `  pasting the console's "undefined" return instead of pasting the clipboard\n` +
+    `  (Cmd+V), or copying a truncated preview. Copy the exact value instead:\n` +
+    `      copy(JSON.parse(localStorage.getItem('autoll6.auth')).${field})\n` +
+    `  then paste here with Cmd+V. Or paste the whole blob at the SWID prompt:\n` +
+    `      copy(JSON.stringify(JSON.parse(localStorage.getItem('autoll6.auth'))))`;
+
+/**
+ * A buffered line reader over stdin.
+ *
+ * readline/promises' `question()` drops any line that arrives between two
+ * prompts -- which is exactly what happens when both credentials are pasted
+ * at once, or when a pipe feeds the script. Queueing lines instead means an
+ * early paste is buffered for the next prompt rather than lost.
+ */
+let nextLine;
+function makeLineReader() {
+  const rl = readline.createInterface({ input: process.stdin, terminal: false });
+  const queue = [];
+  let waiting = null;
+  let done = false;
+  rl.on('line', line => {
+    if (waiting) { const wake = waiting; waiting = null; wake(line); }
+    else queue.push(line);
+  });
+  rl.on('close', () => {
+    done = true;
+    if (waiting) { const wake = waiting; waiting = null; wake(null); }
+  });
+  return () =>
+    new Promise(resolve => {
+      if (queue.length) return resolve(queue.shift());
+      if (done) return resolve(null);
+      waiting = resolve;
+    });
+}
+
+/** Next stdin line, or null at end of input. Lines sent early are queued. */
+function readLine() {
+  nextLine ??= makeLineReader();
+  return nextLine();
+}
+
 async function prompt(what) {
-  if (!process.stdin.isTTY) {
-    throw new Error(`${what} missing: pass it with --${what === 'SWID' ? 'swid' : 'token'} or run from a terminal to paste it`);
-  }
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const field = what === 'SWID' ? 'swid' : 'accessToken';
-  let answer;
   for (;;) {
-    answer = (await rl.question(`${what}: `)).trim().replace(/^["']|["']$/g, '');
-    // A DevTools object preview shows long strings truncated with an ellipsis;
-    // copying from the preview therefore yields a short value containing a
-    // non-ASCII character, which fetch would only reject much later, inside
-    // the Authorization header. Fail here, with the remedy.
-    if (/^[\x20-\x7E]*$/.test(answer)) break;
-    console.log(
-      `  that value contains a non-ASCII character -- it came from a truncated\n` +
-      `  console preview. Copy the raw string instead; in the DevTools console run:\n` +
-      `      copy(JSON.parse(localStorage.getItem('autoll6.auth')).${field})\n` +
-      `  which places the exact value on your clipboard, then paste it here.`
-    );
+    const raw = await readLine();
+    if (raw === null) {
+      throw new Error(
+        `${what} missing: pass it with --${field}, or run from a terminal to paste it`
+      );
+    }
+    const answer = raw.trim().replace(/^["']|["']$/g, '');
+    if (what === 'SWID') {
+      // Accept the entire auth blob pasted at once -- one copy, one paste,
+      // and no truncated-preview ambiguity for the long token that follows.
+      if (answer.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(answer);
+          if (validSwid(parsed.swid ?? '') && validToken(parsed.accessToken ?? '')) {
+            swid = parsed.swid;
+            token = parsed.accessToken;
+            log('  parsed the auth blob: swid and accessToken both taken from it.');
+            return swid;
+          }
+        } catch { /* fell through to the retry message */ }
+      }
+      if (validSwid(answer)) return answer;
+    } else if (validToken(answer)) {
+      return answer;
+    }
+    console.log(RETRY_WITH_COPY(field));
   }
-  rl.close();
-  return answer;
 }
 
 async function freshPayload() {
@@ -131,8 +191,11 @@ async function guests(payload, { swid, token }, date, facilityId, parkId) {
 }
 
 async function main() {
-  if (!dry && !swid) swid = await prompt('SWID');
-  if (!dry && !token) token = await prompt('accessToken');
+  // Live runs always need credentials; a dry run prompts too when it can, so
+  // the credential flow itself can be rehearsed with nothing sent to Disney.
+  const interactive = process.stdin.isTTY;
+  if (!swid && (!dry || interactive)) swid = await prompt('SWID');
+  if (!token && (!dry || interactive)) token = await prompt('accessToken');
 
   const date = arg('date', new Date().toISOString().slice(0, 10));
   const facilityId = arg('facility', '16767284');
@@ -229,6 +292,7 @@ async function main() {
 }
 
 main().catch(error => {
-  console.error(error.message);
+  if (process.env.DEBUG) console.error(error.stack ?? error);
+  else console.error(error.message);
   process.exit(1);
 });
