@@ -21,9 +21,8 @@
   const MAX_TESTS = 4;              // ladder cells per run
   const PACE_MS = 15000;            // between guests calls
   const USE_COUNT_TEST = false;     // true: send one fresh payload 8 times
-  const TEST_3A = true;             // true: also fire one locally-composed
-                                    // legacy 3,a payload (the format this
-                                    // family owns outright)
+  const TAIL_LADDER = true;         // true: test stored 3,a tails by age
+  const TAIL_CELLS = 2;             // tail cells per run
   const THRESHOLDS_H = [0.5, 1, 2, 4, 8, 24, 48, 96, 168, 336];
   // ---------------------------------------------------------------------
 
@@ -133,6 +132,8 @@
   // need, because every branch specimen is already hours old. Available
   // anytime as: await __sensorCapture(2)
   const CAPTURES_KEY = 'autoll6.sensorCaptures';
+  const TAILS_KEY = 'autoll6.sensorTails';
+  const LEGACY_PREFIX = '3,a,DG0oDh1QTz8ZsxkaARUg25tPZ6gOmXo+eZI1DD+MzwfWrCbxfeN+9CIj968tE97Z+Om4skjwd+9EBSTVoIRkqq55rsJQ4EluLRFkdJfCl16POdor+n+Q+93MmZgo8wr5SF7ui5sSkfAjDXx7r3saWsrtsjIrpHN8MrCUbD54Zkw=,oMEAZLj+cH+cmsrB8LIzz67nundr+PqAfjuLrbftCMiZe28Twn5ozrdusiri1j6r1suj1GK8jkPeIk4txUmPiN+/P+aMf56E9Auw4lTb/1G2j5/BuC6lEblNepgzzbYwyMbchk7HIdZ9Skaa3cgrUmI4vmbzw/r0dhuLjlhrC64=';
   window.__sensorCapture = async (n = 2) => {
     const stored = JSON.parse(localStorage.getItem(CAPTURES_KEY) ?? '[]');
     const seen = new Set(stored.map(s => s.payload));
@@ -148,31 +149,72 @@
     console.log('captured ' + added + ' payloads; local pool: ' + stored.length);
     return stored.length;
   };
+  // Tails for the 3,a shelf-life question: capture the raw string now,
+  // compose against the owned prefix at test time.
+  window.__tailCapture = async (n = 3) => {
+    const stored = JSON.parse(localStorage.getItem(TAILS_KEY) ?? '[]');
+    let added = 0;
+    for (let i = 0; i < n; i++) {
+      if (i > 0) await sleep(1200);
+      const res = await fetch('https://bg1.joelface.com/sensor-data/random', {
+        method: 'POST', referrer: '', signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) throw new Error('tail endpoint returned ' + res.status);
+      stored.push({ t: Date.now(), tail: await res.text() });
+      added++;
+    }
+    localStorage.setItem(TAILS_KEY, JSON.stringify(stored));
+    console.log('captured ' + added + ' tails; local tail pool: ' + stored.length);
+    return stored.length;
+  };
   await window.__sensorCapture(2);
+  await window.__tailCapture(2);
 
-  // ---- legacy 3,a: the composer this family owns outright ----
-  // The dead format was a static device blob plus a literal random tail,
-  // composed client-side -- no service, no expiry by construction. If Disney
-  // still accepts it, sensor independence is already owned. The blob is the
-  // one committed at docs/sensor-format/old-3a-static.txt; the tail mimics
-  // the 1.5-3 KB of base64 randomness the old endpoint used to supply.
-  if (TEST_3A) {
-    // The full 349-char static prefix: version, platform, and TWO 172-char
-    // device sections. The first retest composed only the first section --
-    // a truncated device blob -- and its 403 said nothing about the format.
-    // Full prefix is committed at docs/sensor-format/old-3a-prefix.txt.
-    const LEGACY_PREFIX = '3,a,DG0oDh1QTz8ZsxkaARUg25tPZ6gOmXo+eZI1DD+MzwfWrCbxfeN+9CIj968tE97Z+Om4skjwd+9EBSTVoIRkqq55rsJQ4EluLRFkdJfCl16POdor+n+Q+93MmZgo8wr5SF7ui5sSkfAjDXx7r3saWsrtsjIrpHN8MrCUbD54Zkw=,oMEAZLj+cH+cmsrB8LIzz67nundr+PqAfjuLrbftCMiZe28Twn5ozrdusiri1j6r1suj1GK8jkPeIk4txUmPiN+/P+aMf56E9Auw4lTb/1G2j5/BuC6lEblNepgzzbYwyMbchk7HIdZ9Skaa3cgrUmI4vmbzw/r0dhuLjlhrC64=';
-    const tailBytes = crypto.getRandomValues(new Uint8Array(2048));
-    const tail = btoa(String.fromCharCode(...tailBytes));
-    const legacy = LEGACY_PREFIX + '$' + tail + '$,,';
+  // ---- 3,a tail ladder: does a stockpiled REAL tail keep working? ----
+  // The tail is service-issued (a locally generated one draws 403), but if
+  // issued tails stay valid for days, a stockpile of real tails + the owned
+  // prefix is a fully offline composer for AutoLL-3's format. Each cell
+  // composes prefix + "$" + tail + "$" + ",," with a tail aged into that
+  // cell, first use only. Note the fresh-tail control: an AutoLL-3-style
+  // composition with a just-fetched tail should pass, proving the composer.
+  if (TAIL_LADDER) {
+    const tails = JSON.parse(localStorage.getItem(TAILS_KEY) ?? '[]')
+      .map((t, i) => ({ ...t, ref: 'tail' + i, ageH: (Date.now() - t.t) / 36e5 }));
+    console.log('tail pool: ' + tails.length + ' tails' + (tails.length ?
+      ', ages ' + Math.min(...tails.map(t => t.ageH)).toFixed(1) + 'h..' +
+      Math.max(...tails.map(t => t.ageH)).toFixed(1) + 'h' : ''));
+
+    // fresh-tail control: proves the owned composer + a live tail passes
     await sleep(PACE_MS);
-    log('legacy 3,a (locally composed, FULL prefix): testing...');
-    const l = await guests(legacy);
-    const alive = l.status !== 403 && l.status !== 401;
-    log('  legacy 3,a: HTTP ' + l.status + (alive ? ' GATE PASS -- THE OWNED COMPOSER IS ALIVE' :
-      l.status === 403 ? ' GATE FAIL -- format is dead (or the tail is service-issued)' : ''));
-    if (l.detail) console.log('  body: ' + l.detail);
-    results.push({ ref: 'legacy-3a', kind: 'legacy', ageH: 0, status: l.status, gatePass: alive });
+    log('tail control (live tail, composed locally): testing...');
+    const cres = await fetch('https://bg1.joelface.com/sensor-data/random', {
+      method: 'POST', referrer: '', signal: AbortSignal.timeout(8000),
+    });
+    const liveTail = await cres.text();
+    const lc = await guests(LEGACY_PREFIX + '$' + liveTail + '$,,');
+    const lcPass = lc.status !== 403 && lc.status !== 401;
+    log('  live-tail composition: HTTP ' + lc.status + (lcPass ? ' GATE PASS -- composer verified' : ' GATE FAIL'));
+    if (lc.detail) console.log('  body: ' + lc.detail);
+    results.push({ ref: 'tail-live', kind: '3a-composer', ageH: 0, status: lc.status, gatePass: lcPass });
+    if (lc.status === 401) { console.error('session dead.'); return; }
+
+    let tdone = 0;
+    for (const threshold of [0.5, 1, 2, 4, 8, 24, 48, 96, 168]) {
+      if (tdone >= TAIL_CELLS) break;
+      const pick = tails
+        .filter(t => t.ageH >= threshold && !results.some(r => r.ref === t.ref))
+        .sort((a, b) => (a.ageH - threshold) - (b.ageH - threshold))[0];
+      if (!pick) continue;
+      await sleep(PACE_MS);
+      log('tail ladder ' + threshold + 'h: testing ' + pick.ref + ' (tail age ' + pick.ageH.toFixed(1) + 'h)...');
+      const tr = await guests(LEGACY_PREFIX + '$' + pick.tail + '$,,');
+      const gateFail = tr.status === 403;
+      log('  ' + pick.ref + ' @ tail-age ' + pick.ageH.toFixed(1) + 'h: HTTP ' + tr.status +
+        (gateFail ? ' GATE FAIL' : ' GATE PASS (business answer)'));
+      if (tr.detail) console.log('  body: ' + tr.detail);
+      results.push({ ref: pick.ref, kind: 'tail-age', capturedAt: new Date(pick.t).toISOString(), ageH: +pick.ageH.toFixed(2), threshold, status: tr.status, gatePass: !gateFail });
+      tdone++;
+    }
   }
 
   // ---- ladder ----
