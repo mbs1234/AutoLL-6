@@ -23,20 +23,26 @@ Two moving parts:
   **guests** endpoint — `POST …/experiences/guest/guests` — which is
   read-only (party eligibility) and refuses a bad sensor with `403`.
 
-Every run is **control-first**: a fresh payload (age ≈ 0) must pass before
-any aged payload is tested. The control exists because `403` on guests has
-three possible causes — expired sensor, no park admission for the date, or a
-dead session — and only the first is what this experiment measures:
+Every run is **control-first**, and the control embodies the experiment's
+key insight: the gate and the business logic are **layered**. A bad or
+expired sensor is refused `403` at the edge; a good sensor reaches business
+logic, whose answer — `200`, `410` "too early", `400` — depends on booking
+windows and entitlements that have nothing to do with the sensor. So the
+control does not need a booking window or admission for the date: it needs
+the fresh payload to produce **any business answer rather than a gate
+refusal**. A `410` "too early" is a *pass*, not a failure.
 
 | Control result | Meaning | Action |
 | --- | --- | --- |
-| `200` | setup is good; ages are trustworthy | proceed to ladder |
-| `403` | eligibility/config, not age | fix date/facility; **nothing recorded** |
+| any business answer (`200`, `410`, `400`, ...) | fresh payload passed the gate | proceed to ladder |
+| `403` on a **fresh** payload | the gate refused a brand-new payload | stop; new information about the gate itself |
 | `401` | session dead | sign in again; nothing recorded |
 
 The ladder tests thresholds `[0.5h, 1h, 2h, 4h, 8h, 24h, 48h, 96h, 7d, 14d]`,
 the oldest untested cell first, at most `--max-tests` per run, paced ≥20 s
-apart. An optional `--use-count-test` sends one fresh payload 8 times to
+apart. A specimen **passes its cell while it keeps drawing business
+answers**, and the cliff is the first age where answers flip to `403`.
+An optional `--use-count-test` sends one fresh payload 8 times to
 check the five-use rotation assumption and whether Disney flags an identical
 header value.
 

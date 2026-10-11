@@ -187,7 +187,12 @@ async function guests(payload, { swid, token }, date, facilityId, parkId) {
     },
     body: JSON.stringify({ date, facilityId: facilityId ?? null, parkId }),
   });
-  return { status: res.status, ok: res.ok };
+  const ok = res.ok;
+  let detail = '';
+  if (!ok) {
+    try { detail = (await res.text()).slice(0, 300); } catch {}
+  }
+  return { status: res.status, ok, detail };
 }
 
 async function main() {
@@ -207,23 +212,24 @@ async function main() {
     : { runs: [], tests: [] };
 
   // --- control ---
+  // Layered gate: a bad sensor is refused 403 at the edge; a good sensor
+  // reaches business logic, whose answer (200, 410 "too early", ...) depends
+  // on windows and entitlements. The control therefore needs the fresh
+  // payload to produce ANY business answer -- not a booking window.
   log('\ncontrol: fetching fresh payload...');
   const control = dry ? 'DRY' : await freshPayload();
   if (!dry) {
     const c = await guests(control, { swid, token }, date, facilityId, parkId);
-    log(`control (age 0): HTTP ${c.status} ${c.ok ? 'PASS' : 'REFUSED'}`);
-    results.runs.push({ iso: new Date().toISOString(), kind: 'control', status: c.status });
     if (c.status === 401) {
-      writeFileSync(resultsFile, JSON.stringify(results, null, 2));
-      throw new Error('session rejected (401): the token is dead -- sign in again and retry');
+      throw new Error('session dead (401): the token expired -- sign in again and retry');
     }
-    if (!c.ok) {
-      writeFileSync(resultsFile, JSON.stringify(results, null, 2));
+    if (c.status === 403) {
       throw new Error(
-        `fresh payload refused (HTTP ${c.status}): this is eligibility/config/session, not payload age. ` +
-        'Check the date has park admission on this account, the facility id, and the token; do not record ladder results.'
+        'fresh payload refused at the gate (403). That is new information about the gate itself -- no ladder results recorded.'
       );
     }
+    log(`control (age 0): HTTP ${c.status} GATE PASS (business answer)`);
+    results.runs.push({ iso: new Date().toISOString(), kind: 'control', status: c.status });
   } else {
     log('control (age 0): skipped in dry run');
   }
@@ -247,8 +253,10 @@ async function main() {
       log('  dry run: would send guests with this payload');
     } else {
       const r = await guests(pick.payload, { swid, token }, date, facilityId, parkId);
-      const verdict = r.ok ? 'PASS' : r.status === 403 ? 'REFUSED' : `HTTP ${r.status}`;
+      const gateFail = r.status === 403;
+      const verdict = gateFail ? 'GATE FAIL' : `GATE PASS (business ${r.status})`;
       log(`  ${pick.ref} @ ${threshold}h: HTTP ${r.status} -> ${verdict}`);
+      if (r.detail) log('  body: ' + r.detail);
       results.tests.push({
         iso: new Date().toISOString(),
         ref: pick.ref,
@@ -256,7 +264,7 @@ async function main() {
         ageH: Number(pick.ageH.toFixed(2)),
         threshold,
         status: r.status,
-        pass: r.ok,
+        gatePass: !gateFail,
       });
     }
     tested.add(`${pick.ref}@${threshold}h`);
@@ -283,7 +291,7 @@ async function main() {
   const byT = {};
   for (const t of results.tests) {
     byT[t.threshold] = byT[t.threshold] || { pass: 0, fail: 0 };
-    byT[t.threshold][t.pass ? 'pass' : 'fail']++;
+    byT[t.threshold][t.gatePass ? 'pass' : 'fail']++;
   }
   log('ladder so far (threshold: pass/fail):');
   for (const t of Object.keys(byT).sort((a, b) => a - b)) {

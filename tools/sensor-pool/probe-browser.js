@@ -8,7 +8,8 @@
  * refused on client fingerprint alone, and a result from this file is the
  * one that matches how the app actually behaves.
  *
- * Control first (a fresh payload must pass), then the age ladder, one
+ * Control first (a fresh payload must produce a business answer rather than
+ * a gate refusal -- a 410 "too early" is a pass), then the age ladder, one
  * guests call per specimen, paced. The guests endpoint is read-only.
  * Nothing is recorded anywhere except this console and your clipboard.
  */
@@ -102,20 +103,26 @@
   log('control: fetching fresh payload...');
   const control = await freshPayload();
   const c = await guests(control);
-  log('control (age 0): HTTP ' + c.status + (c.ok ? ' PASS' : ' REFUSED'));
   if (c.detail) console.log('control body: ' + c.detail);
-  if (!c.ok) {
-    if (c.status === 401) console.error('Session dead (401): sign in again through AutoLL-6.');
-    else console.error(
-      'Fresh payload refused (HTTP ' + c.status + ') from the browser too. If the browser is signed in and ' +
-      DATE + ' carries park admission on this account, tell soellner-the-operator -- this would mean the ' +
-      'guests call needs something the app does not send, which would be new information.'
-    );
+  // The gate and the business logic are layered: a bad sensor is refused 403
+  // at the edge; a good sensor reaches business logic, whose answer (200,
+  // 410 "too early", 400, ...) depends on windows and entitlements. So the
+  // control does not need a booking window -- it needs the fresh payload to
+  // produce ANY business answer rather than a gate refusal.
+  if (c.status === 401) {
+    log('control (age 0): HTTP 401 -- session dead. Sign in again through AutoLL-6.');
     return;
   }
+  if (c.status === 403) {
+    log('control (age 0): HTTP 403 REFUSED AT THE GATE.');
+    console.error('A fresh payload was refused at the gate. That is new information about the' +
+      ' gate itself (or this probe differs from the app in a way that matters) -- no ladder results recorded.');
+    return;
+  }
+  log('control (age 0): HTTP ' + c.status + ' GATE PASS (business answer)');
 
   // ---- ladder ----
-  const results = [{ ref: 'control', ageH: 0, status: c.status, pass: c.ok }];
+  const results = [{ ref: 'control', ageH: 0, status: c.status, pass: true }];
   let done = 0;
   for (const threshold of THRESHOLDS_H) {
     if (done >= MAX_TESTS) break;
@@ -126,9 +133,15 @@
     await sleep(PACE_MS);
     log('ladder ' + threshold + 'h: testing ' + pick.ref + ' (age ' + pick.ageH.toFixed(1) + 'h)...');
     const r = await guests(pick.payload);
-    log('  ' + pick.ref + ' @ ' + threshold + 'h: HTTP ' + r.status + (r.ok ? ' PASS' : r.status === 403 ? ' REFUSED' : ''));
+    if (r.status === 401) {
+      log('  HTTP 401 -- session dead mid-ladder. Sign in again; nothing further recorded this run.');
+      break;
+    }
+    const gateFail = r.status === 403;
+    log('  ' + pick.ref + ' @ ' + threshold + 'h: HTTP ' + r.status +
+      (gateFail ? ' GATE FAIL' : ' GATE PASS (business answer)'));
     if (r.detail) console.log('  body: ' + r.detail);
-    results.push({ ref: pick.ref, capturedAt: new Date(pick.t).toISOString(), ageH: +pick.ageH.toFixed(2), threshold, status: r.status, pass: r.ok });
+    results.push({ ref: pick.ref, capturedAt: new Date(pick.t).toISOString(), ageH: +pick.ageH.toFixed(2), threshold, status: r.status, gatePass: !gateFail });
     done++;
   }
 
@@ -146,7 +159,7 @@
   }
 
   console.table(results.map(r => ({
-    ref: r.ref, kind: r.kind ?? 'age', ageH: r.ageH ?? '-', threshold: r.threshold ?? '-', status: r.status ?? (r.statuses || []).join(','), pass: r.pass ?? '-',
+    ref: r.ref, kind: r.kind ?? 'age', ageH: r.ageH ?? '-', threshold: r.threshold ?? '-', status: r.status ?? (r.statuses || []).join(','), gatePass: r.gatePass ?? '-',
   })));
   try { copy(JSON.stringify(results, null, 2)); console.log('Full results JSON copied to clipboard -- paste it back to the operator.'); } catch {}
 })();
