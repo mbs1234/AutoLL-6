@@ -53,6 +53,23 @@ Let `cliff` = the greatest age with a passing test.
 
 ## Running it
 
+**Preferred: the browser probe** (`probe-browser.js`). The Node probe below
+works, but its control can be refused for reasons that have nothing to do
+with payload age: Akamai fingerprints the client (TLS handshake, HTTP
+detail), and a Node `fetch` looks nothing like the browser the payload
+claims to come from. The browser probe runs inside a tab on Disney's origin
+-- the exact environment production uses -- and needs no credential
+handling at all: it reads the session the build already signed in with.
+
+1. Open the logged-in **disneyworld.disney.go.com** tab, open DevTools
+   (see below), and open the whole of `probe-browser.js` into the console.
+2. Edit the `DATE` at the top to a date the party holds admission for.
+3. Run it. Control first; the ladder follows automatically. When it
+   finishes it prints a table and copies the results JSON to your
+   clipboard -- paste that back to the operator.
+
+**The Node probe** (`probe.mjs`) remains for scripting and dry runs.
+
 Find credentials (this machine only, never send them anywhere): on a
 **logged-in** disneyworld.disney.go.com page in a browser where AutoLL-6 has
 signed in, in DevTools:
