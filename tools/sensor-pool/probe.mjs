@@ -72,7 +72,22 @@ async function prompt(what) {
     throw new Error(`${what} missing: pass it with --${what === 'SWID' ? 'swid' : 'token'} or run from a terminal to paste it`);
   }
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const answer = (await rl.question(`${what}: `)).trim();
+  const field = what === 'SWID' ? 'swid' : 'accessToken';
+  let answer;
+  for (;;) {
+    answer = (await rl.question(`${what}: `)).trim().replace(/^["']|["']$/g, '');
+    // A DevTools object preview shows long strings truncated with an ellipsis;
+    // copying from the preview therefore yields a short value containing a
+    // non-ASCII character, which fetch would only reject much later, inside
+    // the Authorization header. Fail here, with the remedy.
+    if (/^[\x20-\x7E]*$/.test(answer)) break;
+    console.log(
+      `  that value contains a non-ASCII character -- it came from a truncated\n` +
+      `  console preview. Copy the raw string instead; in the DevTools console run:\n` +
+      `      copy(JSON.parse(localStorage.getItem('autoll6.auth')).${field})\n` +
+      `  which places the exact value on your clipboard, then paste it here.`
+    );
+  }
   rl.close();
   return answer;
 }
