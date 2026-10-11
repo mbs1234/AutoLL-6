@@ -204,6 +204,21 @@
     results.push({ ref: 'tail-live', kind: '3a-composer', ageH: 0, status: lc.status, gatePass: lcPass });
     if (lc.status === 401) { console.error('session dead.'); return; }
 
+    // The decisive sibling: identical composition, but the tail is locally
+    // generated randomness. If this passes, the tail carries no required
+    // state and the whole 3,a payload is locally composable -- full sensor
+    // independence for this format. If it fails while the live tail passes,
+    // the tail is service-issued content.
+    await sleep(PACE_MS);
+    log('random-tail composition (locally generated tail): testing...');
+    const rbytes = crypto.getRandomValues(new Uint8Array(2048));
+    const randTail = btoa(String.fromCharCode(...rbytes));
+    const rr = await guests(LEGACY_PREFIX + '$' + randTail + '$,,');
+    const rPass = rr.status !== 403 && rr.status !== 401;
+    log('  random-tail: HTTP ' + rr.status + (rPass ? ' GATE PASS -- FULLY LOCAL COMPOSER CONFIRMED' : ' GATE FAIL -- the tail must be service-issued'));
+    if (rr.detail) console.log('  body: ' + rr.detail);
+    results.push({ ref: 'tail-random', kind: '3a-local', ageH: 0, status: rr.status, gatePass: rPass });
+
     let tdone = 0;
     for (const threshold of [0.5, 1, 2, 4, 8, 24, 48, 96, 168]) {
       if (tdone >= TAIL_CELLS) break;
