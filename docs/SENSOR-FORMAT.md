@@ -108,6 +108,34 @@ What the evidence leaves open, in order of cost:
    is limited — the format is abandoned upstream — but it is the only
    sensor path this family owns outright.
 
+## Shelf-life findings (2026-10-11)
+
+The browser probe (`tools/sensor-pool/probe-browser.js`) measured the
+question this document left open:
+
+- **A fresh payload passes the gate** from a real browser session
+  (`410`, a business answer -- the booking window for the test date was
+  closed, which is fine: business answers are gate passes).
+- **Payloads die young.** Three distinct never-reused specimens at
+  2.3-3.4 h of age all drew `403` (Akamai "Access Denied"), while age-0
+  controls passed throughout. The cliff is somewhere in (0, 2.5 h].
+- **The old `3,a` format is dead.** A locally composed `3,a` payload --
+  the static blob committed in `docs/sensor-format/old-3a-static.txt`
+  plus a locally generated random tail, no service involved -- drew
+  `403` in two independent runs. Upstream did not merely stop updating
+  that format; Disney refuses it.
+- **Payloads are not client-bound.** Captures from different IPs
+  (residential and GitHub Actions) carry the identical UUID and static
+  device blob; the service emits one global emulated device.
+
+Consequences: pooling is dead as an independence strategy (no payload
+survives from a morning capture to an afternoon drop); the legacy
+composer cannot be the fallback; and any build still booking through
+the `3,a` path -- AutoLL-3 -- is expected to draw `403` on booking
+calls. The `5,i` payload must be fetched live at booking time, which
+makes the service a hard dependency and failover/monitoring the
+available resilience work.
+
 ## Reproducing this analysis
 
 Decrypt with the provider's key (AES-256-GCM, IV = first 12 bytes, tag =
