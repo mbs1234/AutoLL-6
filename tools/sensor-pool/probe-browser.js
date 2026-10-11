@@ -21,6 +21,8 @@
   const MAX_TESTS = 4;              // ladder cells per run
   const PACE_MS = 15000;            // between guests calls
   const USE_COUNT_TEST = false;     // true: send one fresh payload 8 times
+  const LADDER_LOCAL_ONLY = true;   // branch specimens (2.3h+) are fully
+                                    // characterized; spend tests on locals
   const TAIL_LADDER = true;         // true: test stored 3,a tails by age
   const TAIL_CELLS = 2;             // tail cells per run
   const THRESHOLDS_H = [0.5, 1, 2, 4, 8, 24, 48, 96, 168, 336];
@@ -228,7 +230,11 @@
   const pool = [
     ...poolBranch.map(p => ({ ...p, origin: 'actions' })),
     ...localCaptures.map(p => ({ ...p, origin: 'local' })),
-  ].map((p, i) => ({ ...p, ref: (p.origin === 'local' ? 'local' : 'branch') + i }));
+  ].map((p, i) => ({
+    ...p,
+    ageH: (Date.now() - p.t) / 36e5,
+    ref: (p.origin === 'local' ? 'local' : 'branch') + i,
+  }));
   console.log('pool: ' + pool.length + ' payloads (' +
     localCaptures.length + ' local, ' + poolBranch.length + ' branch), ages ' +
     Math.min(...pool.map(p => p.ageH)).toFixed(1) + 'h..' + Math.max(...pool.map(p => p.ageH)).toFixed(1) + 'h');
@@ -238,7 +244,8 @@
     // age with use-count, and reuse-burn is exactly what the five-use
     // rotation hypothesis says to avoid.
     const pick = pool
-      .filter(p => p.ageH >= threshold && !results.some(r => r.ref === p.ref))
+      .filter(p => p.ageH >= threshold && !results.some(r => r.ref === p.ref) &&
+        (!LADDER_LOCAL_ONLY || p.origin === 'local'))
       .sort((a, b) => (a.ageH - threshold) - (b.ageH - threshold) || b.ageH - a.ageH)[0];
     if (!pick) continue;
     await sleep(PACE_MS);
