@@ -44,7 +44,11 @@
   }
 
   async function freshPayload() {
-    const res = await fetch(SENSOR_URL, { method: 'POST', signal: AbortSignal.timeout(8000) });
+    const res = await fetch(SENSOR_URL, {
+      method: 'POST',
+      signal: AbortSignal.timeout(8000),
+      referrer: '', // the provider blanks this too
+    });
     if (!res.ok) throw new Error('sensor endpoint returned ' + res.status);
     const raw = new Uint8Array(await res.arrayBuffer());
     const key = await crypto.subtle.importKey(
@@ -56,10 +60,16 @@
     return new TextDecoder().decode(pt);
   }
 
+  // Byte-for-byte the app's transport: no referrer, no cookies (credentials
+  // omitted -- the family tested cookies and reverted them), no cache. A
+  // refusal body is Disney speaking and gets printed, not swallowed.
   async function guests(payload) {
     const res = await fetch(GUESTS_URL, {
       method: 'POST',
       signal: AbortSignal.timeout(15000),
+      referrer: '',
+      credentials: 'omit',
+      cache: 'no-store',
       headers: {
         'Accept-Language': 'en-US',
         Authorization: 'BEARER ' + auth.accessToken,
@@ -70,7 +80,12 @@
       },
       body: JSON.stringify({ date: DATE, facilityId: FACILITY_ID, parkId: PARK_ID }),
     });
-    return { status: res.status, ok: res.ok };
+    const ok = res.ok;
+    let detail = '';
+    if (!ok) {
+      try { detail = (await res.text()).slice(0, 300); } catch {}
+    }
+    return { status: res.status, ok, detail };
   }
 
   log('loading pool from the sensor-pool branch...');
@@ -88,6 +103,7 @@
   const control = await freshPayload();
   const c = await guests(control);
   log('control (age 0): HTTP ' + c.status + (c.ok ? ' PASS' : ' REFUSED'));
+  if (c.detail) console.log('control body: ' + c.detail);
   if (!c.ok) {
     if (c.status === 401) console.error('Session dead (401): sign in again through AutoLL-6.');
     else console.error(
@@ -111,6 +127,7 @@
     log('ladder ' + threshold + 'h: testing ' + pick.ref + ' (age ' + pick.ageH.toFixed(1) + 'h)...');
     const r = await guests(pick.payload);
     log('  ' + pick.ref + ' @ ' + threshold + 'h: HTTP ' + r.status + (r.ok ? ' PASS' : r.status === 403 ? ' REFUSED' : ''));
+    if (r.detail) console.log('  body: ' + r.detail);
     results.push({ ref: pick.ref, capturedAt: new Date(pick.t).toISOString(), ageH: +pick.ageH.toFixed(2), threshold, status: r.status, pass: r.ok });
     done++;
   }
