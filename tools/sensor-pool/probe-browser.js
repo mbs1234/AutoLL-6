@@ -134,16 +134,20 @@
   // one committed at docs/sensor-format/old-3a-static.txt; the tail mimics
   // the 1.5-3 KB of base64 randomness the old endpoint used to supply.
   if (TEST_3A) {
-    const LEGACY_BLOB = 'DG0oDh1QTz8ZsxkaARUg25tPZ6gOmXo+eZI1DD+MzwfWrCbxfeN+9CIj968tE97Z+Om4skjwd+9EBSTVoIRkqq55rsJQ4EluLRFkdJfCl16POdor+n+Q+93MmZgo8wr5SF7ui5sSkfAjDXx7r3saWsrtsjIrpHN8MrCUbD54Zkw=';
+    // The full 349-char static prefix: version, platform, and TWO 172-char
+    // device sections. The first retest composed only the first section --
+    // a truncated device blob -- and its 403 said nothing about the format.
+    // Full prefix is committed at docs/sensor-format/old-3a-prefix.txt.
+    const LEGACY_PREFIX = '3,a,DG0oDh1QTz8ZsxkaARUg25tPZ6gOmXo+eZI1DD+MzwfWrCbxfeN+9CIj968tE97Z+Om4skjwd+9EBSTVoIRkqq55rsJQ4EluLRFkdJfCl16POdor+n+Q+93MmZgo8wr5SF7ui5sSkfAjDXx7r3saWsrtsjIrpHN8MrCUbD54Zkw=,oMEAZLj+cH+cmsrB8LIzz67nundr+PqAfjuLrbftCMiZe28Twn5ozrdusiri1j6r1suj1GK8jkPeIk4txUmPiN+/P+aMf56E9Auw4lTb/1G2j5/BuC6lEblNepgzzbYwyMbchk7HIdZ9Skaa3cgrUmI4vmbzw/r0dhuLjlhrC64=';
     const tailBytes = crypto.getRandomValues(new Uint8Array(2048));
     const tail = btoa(String.fromCharCode(...tailBytes));
-    const legacy = '3,a,' + LEGACY_BLOB + '$' + tail + '$,,';
+    const legacy = LEGACY_PREFIX + '$' + tail + '$,,';
     await sleep(PACE_MS);
-    log('legacy 3,a (locally composed): testing...');
+    log('legacy 3,a (locally composed, FULL prefix): testing...');
     const l = await guests(legacy);
     const alive = l.status !== 403 && l.status !== 401;
     log('  legacy 3,a: HTTP ' + l.status + (alive ? ' GATE PASS -- THE OWNED COMPOSER IS ALIVE' :
-      l.status === 403 ? ' GATE FAIL -- format is dead' : ''));
+      l.status === 403 ? ' GATE FAIL -- format is dead (or the tail is service-issued)' : ''));
     if (l.detail) console.log('  body: ' + l.detail);
     results.push({ ref: 'legacy-3a', kind: 'legacy', ageH: 0, status: l.status, gatePass: alive });
   }

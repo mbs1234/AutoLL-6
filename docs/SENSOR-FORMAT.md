@@ -119,22 +119,27 @@ question this document left open:
 - **Payloads die young.** Three distinct never-reused specimens at
   2.3-3.4 h of age all drew `403` (Akamai "Access Denied"), while age-0
   controls passed throughout. The cliff is somewhere in (0, 2.5 h].
-- **The old `3,a` format is dead.** A locally composed `3,a` payload --
-  the static blob committed in `docs/sensor-format/old-3a-static.txt`
-  plus a locally generated random tail, no service involved -- drew
-  `403` in two independent runs. Upstream did not merely stop updating
-  that format; Disney refuses it.
+- **~~The old `3,a` format is dead~~ CORRECTED 2026-10-11:** the first
+  retest composed the legacy payload from an incomplete prefix -- one of
+  the TWO static 172-char device sections, 349 chars total. The owner
+  verified in production the same day that AutoLL-3 (which books through
+  `3,a`) passes the gate, so the format is alive and the composition was
+  at fault. A retest with the full prefix
+  (`docs/sensor-format/old-3a-prefix.txt`) is pending; if it passes with
+  a locally generated tail, the legacy composer is a fully local sensor
+  path. If it fails where AutoLL-3 succeeds, the tail from
+  `/sensor-data/random` is service-issued rather than arbitrary
+  randomness.
 - **Payloads are not client-bound.** Captures from different IPs
   (residential and GitHub Actions) carry the identical UUID and static
   device blob; the service emits one global emulated device.
 
 Consequences: pooling is dead as an independence strategy (no payload
-survives from a morning capture to an afternoon drop); the legacy
-composer cannot be the fallback; and any build still booking through
-the `3,a` path -- AutoLL-3 -- is expected to draw `403` on booking
-calls. The `5,i` payload must be fetched live at booking time, which
-makes the service a hard dependency and failover/monitoring the
-available resilience work.
+survives from a morning capture to an afternoon drop); the `5,i` payload
+must be fetched live at booking time, which makes the service a hard
+dependency and failover/monitoring the available resilience work. The
+legacy `3,a` composer is a live independence candidate -- see the
+corrected finding above -- pending a retest with its full prefix.
 
 ## Reproducing this analysis
 
