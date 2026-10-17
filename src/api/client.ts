@@ -5,7 +5,8 @@ import { authStore } from './auth';
 import { Resort } from './resort';
 import { getSensorData, resetSensorData } from './sensor-data';
 
-const DISNEY_APP_VERSION = '8.23.3';
+// The app version is embedded in the x-app-id for the Android path.
+// AutoLL-6 uses the 3,a sensor family with the Android presentation.
 
 export class InvalidOrigin extends Error {
   name = 'InvalidOrigin';
@@ -127,7 +128,7 @@ export abstract class ApiClient {
           typeof sd === 'string'
             ? sd
             : await abortable(sd, request.control?.signal),
-        'x-app-id': `${this.resort.id}-IOS-${DISNEY_APP_VERSION}`,
+        'x-app-id': 'WDW-MDX-ANDROID-8.16.0',
       };
     }
     const url = this.origin + request.path;
