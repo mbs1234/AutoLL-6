@@ -12,7 +12,7 @@
  * the page. No refresh is needed — 3,a sensors do not expire.
  */
 
-const POOL_URL = \`\${import.meta.env.BASE_URL}3a-pool.json\`;
+const POOL_URL = `${import.meta.env.BASE_URL}3a-pool.json`;
 
 interface SensorDataModule {
   getSensorData(): Promise<string> | string;
