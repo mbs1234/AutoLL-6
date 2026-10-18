@@ -1016,14 +1016,22 @@ function shuffle(n: number): number[] {
     const indices = Array.from({ length: n }, (_, i) => i);
     for (let i = n - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
+        const tmp = indices[i]!;
+        indices[i] = indices[j]!;
+        indices[j] = tmp;
     }
     return indices;
 }
 
-export function getSensorData(): string {
+/**
+ * The union return keeps the module interface identical to AutoLL-5's —
+ * `client.ts` awaits whichever it receives. The pool serves synchronously;
+ * the Promise arm exists so test mocks can reject (the local-preparation-
+ * failure path exercises that).
+ */
+export function getSensorData(): Promise<string> | string {
     if (deck.length === 0) deck = shuffle(POOL.length);
-    return POOL[deck.pop()!];
+    return POOL[deck.pop()!]!;
 }
 
 export function resetSensorData(): void {
